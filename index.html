@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pocket Debt - บันทึกหนี้สินส่วนบุคคล</title>
+    <meta name="description" content="ระบบจดบันทึกหนี้สินและเงินค้างรับส่วนบุคคล ใช้งานง่าย ปลอดภัย ข้อมูลบันทึกแบบออฟไลน์ส่วนตัว">
+    <!-- Google Fonts: Outfit for English & numbers, Kanit for Thai -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <!-- Google Identity Services (Sign-In) SDK -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body class="dark-theme">
+    <div class="background-decor">
+        <div class="circle circle-1"></div>
+        <div class="circle circle-2"></div>
+        <div class="circle circle-3"></div>
+    </div>
+
+    <div class="app-container">
+        <!-- HEADER -->
+        <header class="app-header">
+            <div class="logo-area">
+                <span class="logo-icon">💸</span>
+                <div class="logo-text">
+                    <h1>Pocket Debt</h1>
+                    <p>บันทึกหนี้สินส่วนตัว</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <!-- Google User Section -->
+                <div class="google-auth-area" id="google-auth-area">
+                    <!-- If no client ID set: show simple Connect Google button -->
+                    <button id="btn-google-connect" class="btn btn-secondary btn-google-connect" title="เชื่อมต่อ Google Sign-in">
+                        <svg viewBox="0 0 24 24" width="16" height="16" style="margin-right: 6px;"><path fill="#EA4335" d="M12.24 10.285V14.4h6.887c-.275 1.565-1.88 4.604-6.887 4.604-4.33 0-7.866-3.577-7.866-8s3.536-8 7.866-8c2.46 0 4.105 1.025 5.047 1.926l3.227-3.103C18.29 1.77 15.437 1 12.24 1 6.012 1 12.24 6.012 12.24 12.24S17.252 23.48 23.48 23.48c6.502 0 10.82-4.572 10.82-11.02 0-.74-.08-1.305-.18-1.705H12.24z"/></svg>
+                        เชื่อมบัญชี Google
+                    </button>
+                    
+                    <!-- Container for GIS rendering -->
+                    <div id="google-signin-btn-wrapper" class="google-signin-btn-wrapper hidden">
+                        <div id="google-signin-btn"></div>
+                    </div>
+
+                    <!-- User Profile Dropdown Widget (hidden by default) -->
+                    <div class="user-profile-widget hidden" id="user-profile-widget">
+                        <button class="profile-badge-btn" id="profile-badge-btn">
+                            <img src="" alt="Avatar" id="user-avatar" class="user-avatar">
+                            <span class="user-name-short" id="user-name-short">-</span>
+                            <svg class="chevron-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </button>
+                        <div class="profile-dropdown-menu" id="profile-dropdown-menu">
+                            <div class="dropdown-user-info">
+                                <h4 id="user-full-name">-</h4>
+                                <p id="user-email">-</p>
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <button class="dropdown-item" id="btn-change-client-id">
+                                <span class="item-icon">⚙️</span>
+                                <span class="item-text">ตั้งค่า Client ID</span>
+                            </button>
+                            <button class="dropdown-item text-danger" id="btn-google-signout">
+                                <span class="item-icon">🚪</span>
+                                <span class="item-text">ลงชื่อออก</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Import/Export buttons -->
+                <button id="btn-export" class="btn-icon" title="สำรองข้อมูล (Export JSON)">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    <span class="btn-tooltip">สำรองข้อมูล</span>
+                </button>
+                <button id="btn-import-trigger" class="btn-icon" title="นำเข้าข้อมูล (Import JSON)">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    <span class="btn-tooltip">นำเข้าข้อมูล</span>
+                </button>
+                <input type="file" id="file-import" accept=".json" style="display: none;">
+                
+                <!-- Dark Mode Toggle -->
+                <button id="theme-toggle" class="btn-icon theme-toggle-btn" aria-label="Toggle Theme">
+                    <svg class="sun-icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                    <svg class="moon-icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- MAIN DASHBOARD -->
+        <main class="app-main">
+            <section class="dashboard-section">
+                <!-- Net Worth / Summary Card -->
+                <div class="summary-card net-balance-card">
+                    <div class="card-info">
+                        <h2>ดุลภาพหนี้สินสุทธิ</h2>
+                        <div class="amount-display" id="net-balance">฿0.00</div>
+                        <span id="net-balance-status" class="balance-status neutral">ไม่มีหนี้ค้างช้าง</span>
+                    </div>
+                    <div class="card-bg-icon">📊</div>
+                </div>
+
+                <div class="stats-grid">
+                    <!-- Total Owed Card -->
+                    <div class="summary-card owed-card">
+                        <div class="card-header-icon color-owed">
+                            <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                        </div>
+                        <div class="card-info">
+                            <h3>ฉันเป็นหนี้เขา (ยอดค้างชำระ)</h3>
+                            <div class="amount-display text-owed" id="total-owed">฿0.00</div>
+                            <p class="card-subtext" id="owed-count">0 รายการ</p>
+                        </div>
+                    </div>
+
+                    <!-- Total Receivable Card -->
+                    <div class="summary-card receivable-card">
+                        <div class="card-header-icon color-receivable">
+                            <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        </div>
+                        <div class="card-info">
+                            <h3>เขาเป็นหนี้ฉัน (ยอดที่รอเก็บ)</h3>
+                            <div class="amount-display text-receivable" id="total-receivable">฿0.00</div>
+                            <p class="card-subtext" id="receivable-count">0 รายการ</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CHARTS & UPCOMING DEBTS -->
+            <section class="insights-grid">
+                <!-- SVG Donut Chart Card -->
+                <div class="insight-card chart-card">
+                    <h3>สัดส่วนหนี้สินรายบุคคล</h3>
+                    <div class="chart-container">
+                        <div class="chart-wrapper">
+                            <svg width="200" height="200" viewBox="0 0 200 200" class="donut-svg">
+                                <circle class="donut-hole" cx="100" cy="100" r="70" fill="transparent"></circle>
+                                <circle class="donut-ring" cx="100" cy="100" r="70" fill="transparent" stroke-width="20"></circle>
+                                <circle id="donut-segment-owed" class="donut-segment segment-owed" cx="100" cy="100" r="70" fill="transparent" stroke-width="20" stroke-dasharray="0 440" stroke-dashoffset="0"></circle>
+                                <circle id="donut-segment-receivable" class="donut-segment segment-receivable" cx="100" cy="100" r="70" fill="transparent" stroke-width="20" stroke-dasharray="0 440" stroke-dashoffset="0"></circle>
+                            </svg>
+                            <div class="chart-center-label">
+                                <span class="chart-center-val" id="chart-total-count">0</span>
+                                <span class="chart-center-title">รายการ</span>
+                            </div>
+                        </div>
+                        <div class="chart-legend" id="chart-legend-container">
+                            <div class="legend-item"><span class="dot dot-owed"></span> ฉันเป็นหนี้ (<span id="legend-owed-percent">0%</span>)</div>
+                            <div class="legend-item"><span class="dot dot-receivable"></span> เขาเป็นหนี้ (<span id="legend-receivable-percent">0%</span>)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upcoming Due Dates -->
+                <div class="insight-card upcoming-card">
+                    <h3>หนี้ใกล้กำหนดชำระ</h3>
+                    <div class="upcoming-list" id="upcoming-list-container">
+                        <!-- Upcoming items will be dynamically injected here -->
+                        <div class="empty-state-small">ไม่มีรายการที่ใกล้ครบกำหนด</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CONTROLS & FILTER SECTION -->
+            <section class="list-section">
+                <div class="section-header">
+                    <h2>รายการบันทึกทั้งหมด</h2>
+                    <button id="btn-add-debt" class="btn btn-primary">
+                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        เพิ่มบันทึกหนี้สิน
+                    </button>
+                </div>
+
+                <!-- Search & Filters -->
+                <div class="filters-container">
+                    <div class="search-box">
+                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="search-icon"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        <input type="text" id="search-input" placeholder="ค้นหาตามชื่อคน หรือรายละเอียด...">
+                    </div>
+                    
+                    <div class="filters-row">
+                        <!-- Type filter buttons -->
+                        <div class="filter-group-buttons" id="type-filter-group">
+                            <button class="filter-btn active" data-type="all">ทั้งหมด</button>
+                            <button class="filter-btn" data-type="owed">ฉันเป็นหนี้เขา</button>
+                            <button class="filter-btn" data-type="receivable">เขาเป็นหนี้ฉัน</button>
+                        </div>
+                        
+                        <!-- Status select filter -->
+                        <div class="select-wrapper">
+                            <select id="status-filter">
+                                <option value="active">ยังไม่ชำระ / ชำระบางส่วน</option>
+                                <option value="settled">ชำระเสร็จสิ้นแล้ว</option>
+                                <option value="all">สถานะทั้งหมด</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Debt Cards Grid -->
+                <div class="debts-grid" id="debts-grid-container">
+                    <!-- Dynamic debt cards will be loaded here -->
+                    <div class="empty-state">
+                        <span class="empty-icon">📭</span>
+                        <h3>ไม่พบข้อมูลการจดบันทึกหนี้</h3>
+                        <p>คลิกที่ปุ่ม "เพิ่มบันทึกหนี้สิน" เพื่อเริ่มสร้างบันทึกแรกของคุณ</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="app-footer">
+            <p>© 2026 Pocket Debt. ข้อมูลทั้งหมดบันทึกไว้ในเบราว์เซอร์เครื่องนี้เท่านั้น</p>
+            <p class="footer-links">
+                <a href="#" id="btn-clear-all" class="text-danger">ล้างข้อมูลทั้งหมด</a>
+            </p>
+        </footer>
+    </div>
+
+    <!-- MODAL: ADD / EDIT DEBT -->
+    <div class="modal-overlay" id="debt-modal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 id="modal-title">เพิ่มบันทึกหนี้สิน</h3>
+                <button class="btn-close-modal" id="btn-close-debt-modal">×</button>
+            </div>
+            <form id="debt-form">
+                <input type="hidden" id="debt-id">
+                
+                <div class="form-group">
+                    <label>ประเภทหนี้สิน <span class="required">*</span></label>
+                    <div class="radio-toggle-group">
+                        <input type="radio" id="type-owed" name="debt-type" value="owed" checked>
+                        <label for="type-owed" class="type-label owed-label">ฉันเป็นหนี้เขา (Payable)</label>
+                        
+                        <input type="radio" id="type-receivable" name="debt-type" value="receivable">
+                        <label for="type-receivable" class="type-label receivable-label">เขาเป็นหนี้ฉัน (Receivable)</label>
+                    </div>
+                </div>
+
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label for="debt-name">ชื่อเจ้าหนี้ / ลูกหนี้ <span class="required">*</span></label>
+                        <input type="text" id="debt-name" placeholder="ระบุชื่อบุคคลหรือบริษัท..." required>
+                    </div>
+                    <div class="form-group">
+                        <label for="debt-amount">ยอดเงินต้น (บาท) <span class="required">*</span></label>
+                        <input type="number" id="debt-amount" min="1" step="any" placeholder="0.00" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="debt-desc">หัวข้อ / รายละเอียดเรื่องที่กู้ยืม <span class="required">*</span></label>
+                    <input type="text" id="debt-desc" placeholder="เช่น ยืมเงินกินข้าว, ค่าเช่าห้อง, ซื้อคอมพิวเตอร์..." required>
+                </div>
+
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label for="debt-date">วันที่ยืม/เริ่มต้น</label>
+                        <input type="date" id="debt-date">
+                    </div>
+                    <div class="form-group">
+                        <label for="debt-due-date">วันที่ครบกำหนดชำระ</label>
+                        <input type="date" id="debt-due-date">
+                    </div>
+                    <div class="form-group">
+                        <label for="debt-interest">ดอกเบี้ยคงที่ทั้งหมด (บาท)</label>
+                        <input type="number" id="debt-interest" min="0" step="any" placeholder="ไม่มี (0)">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="debt-notes">บันทึกเพิ่มเติม</label>
+                    <textarea id="debt-notes" rows="2" placeholder="รายละเอียดเสริม หรือเงื่อนไขเพิ่มเติม..."></textarea>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-debt-modal">ยกเลิก</button>
+                    <button type="submit" class="btn btn-primary" id="btn-save-debt">บันทึกข้อมูล</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: REPAYMENT & TRANSACTION HISTORY -->
+    <div class="modal-overlay" id="repayment-modal">
+        <div class="modal-box repayment-box">
+            <div class="modal-header">
+                <h3>จัดการการชำระเงิน</h3>
+                <button class="btn-close-modal" id="btn-close-repay-modal">×</button>
+            </div>
+            
+            <div class="debt-quick-info">
+                <div class="info-row">
+                    <span class="info-label">คู่สัญญา:</span>
+                    <span class="info-value font-bold" id="repay-info-name">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">รายการ:</span>
+                    <span class="info-value" id="repay-info-desc">-</span>
+                </div>
+                <div class="info-row highlight">
+                    <span class="info-label" id="repay-label-remaining">ยอดคงเหลือ:</span>
+                    <span class="info-value text-highlight" id="repay-info-remaining">฿0.00</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill" id="repay-progress-fill"></div>
+                </div>
+                <div class="info-row-sub">
+                    <span id="repay-info-paid">ชำระแล้ว: ฿0.00</span>
+                    <span id="repay-info-total">ยอดเต็ม: ฿0.00</span>
+                </div>
+            </div>
+
+            <!-- Add payment Form -->
+            <form id="repayment-form">
+                <input type="hidden" id="repay-debt-id">
+                
+                <h4 class="form-section-title" id="repay-form-title">เพิ่มประวัติการชำระเงิน</h4>
+                
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label>ประเภทการบันทึก <span class="required">*</span></label>
+                    <div class="radio-toggle-group">
+                        <input type="radio" id="repay-action-pay" name="repay-action-type" value="pay" checked>
+                        <label for="repay-action-pay" class="type-label repay-action-pay-label">ชำระคืน (ลดยอดหนี้)</label>
+                        
+                        <input type="radio" id="repay-action-increase" name="repay-action-type" value="increase">
+                        <label for="repay-action-increase" class="type-label repay-action-increase-label">เพิ่มยอดหนี้ (กู้ยืมเพิ่ม)</label>
+                    </div>
+                </div>
+
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label for="repay-amount" id="repay-amount-label">จำนวนเงินที่ชำระ (บาท) <span class="required">*</span></label>
+                        <input type="number" id="repay-amount" min="1" step="any" placeholder="0.00" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="repay-date" id="repay-date-label">วันที่ชำระเงิน <span class="required">*</span></label>
+                        <input type="date" id="repay-date" required>
+                    </div>
+                </div>
+                <div class="form-row-2" style="grid-template-columns: 2fr 1fr; align-items: end;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="repay-note" id="repay-note-label">หมายเหตุการชำระเงิน</label>
+                        <input type="text" id="repay-note" placeholder="เช่น ชำระงวดแรก, โอนผ่านธนาคาร...">
+                    </div>
+                    <button type="submit" id="repay-submit-btn" class="btn btn-success" style="width: 100%; height: 44px;">บันทึกชำระเงิน</button>
+                </div>
+            </form>
+
+            <div class="history-section">
+                <h4 class="form-section-title">ประวัติการชำระคืน</h4>
+                <div class="repayment-history-list" id="repay-history-container">
+                    <!-- History items will be dynamically injected here -->
+                    <div class="empty-state-small">ยังไม่มีประวัติการชำระเงิน</div>
+                </div>
+            </div>
+            
+            <div class="modal-actions-repay">
+                <button type="button" class="btn btn-secondary" id="btn-close-repay-modal-bottom">ปิดหน้าต่าง</button>
+                <button type="button" class="btn btn-success" id="btn-settle-all">ชำระคืนทั้งหมด (ปิดหนี้)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: GOOGLE CLIENT ID SETTINGS -->
+    <div class="modal-overlay" id="google-settings-modal">
+        <div class="modal-box google-settings-box">
+            <div class="modal-header">
+                <h3>ตั้งค่าการเชื่อมต่อ Google API</h3>
+                <button class="btn-close-modal" id="btn-close-google-settings-modal">×</button>
+            </div>
+            
+            <div class="google-instructions">
+                <h4>ขั้นตอนการสร้าง Google Client ID สำหรับใช้งาน:</h4>
+                <ol>
+                    <li>ไปที่หน้า <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud Console</a> แล้วล็อกอินด้วยบัญชี Google</li>
+                    <li>สร้างโปรเจกต์ใหม่ (Create Project)</li>
+                    <li>ไปที่เมนู <strong>APIs & Services</strong> &gt; <strong>Credentials</strong></li>
+                    <li>หากต้องการกำหนดหน้าจอขอความยินยอม (Consent Screen) ให้เลือกแบบ <strong>External</strong> กรอกข้อมูลให้ครบถ้วนแล้วกดบันทึก</li>
+                    <li>คลิกที่ปุ่ม <strong>+ CREATE CREDENTIALS</strong> &gt; เลือก <strong>OAuth client ID</strong></li>
+                    <li>เลือก Application type เป็น <strong>Web application</strong></li>
+                    <li>ตั้งชื่อแอปพลิเคชัน (เช่น Pocket Debt Local)</li>
+                    <li>ในหัวข้อ <strong>Authorized JavaScript origins</strong> ให้กด Add URI แล้วใส่:
+                        <ul>
+                            <li><code>http://localhost</code></li>
+                            <li><code>http://localhost:5000</code></li>
+                        </ul>
+                    </li>
+                    <li>คลิก Create แล้วคัดลอกรหัส <strong>Client ID</strong> (ข้อความยาวๆ ที่ลงท้ายด้วย <code>.apps.googleusercontent.com</code>) มาใส่ในช่องด้านล่างนี้</li>
+                </ol>
+            </div>
+
+            <form id="google-settings-form">
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label for="google-client-id">Google Client ID <span class="required">*</span></label>
+                    <input type="text" id="google-client-id" placeholder="ป้อน Client ID ของคุณ..." required style="font-family: monospace; font-size: 12px; width: 100%; padding: 12px; border: 1px solid var(--border-glass); border-radius: 12px; background: var(--bg-input); color: var(--text-main);">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-google-settings">ยกเลิก</button>
+                    <button type="submit" class="btn btn-primary" id="btn-save-google-settings">บันทึกตั้งค่า</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast Container -->
+    <div id="toast-container"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
